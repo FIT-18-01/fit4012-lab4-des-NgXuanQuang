@@ -137,9 +137,6 @@ public:
             }
 
             roundKeys.push_back(roundKey);
-
-            // Optional: print key
-            cout << "Key " << i + 1 << ": " << roundKey << endl;
         }
     }
 
@@ -280,46 +277,81 @@ class DES {
     
 // Main function
 int main() {
-    const string default_plaintext = "0001001000110100010101100111100010011010101111001101111011110001";
-    const string default_key = "0001001100110100010101110111100110011011101111001101111111110001";
-
+    int mode;
     string plaintext;
     string key;
 
-    cout << "Enter 64-bit plaintext (binary string, leave empty to use default): ";
-    if (!getline(cin, plaintext)) {
-        return 0;
-    }
-    if (plaintext.empty()) {
-        plaintext = default_plaintext;
-    }
-
-    cout << "Enter 64-bit key (binary string, leave empty to use default): ";
-    if (!getline(cin, key)) {
-        return 0;
-    }
-    if (key.empty()) {
-        key = default_key;
-    }
-
-    if (plaintext.size() != 64 || key.size() != 64) {
-        cerr << "Error: plaintext and key must each be 64 bits long." << endl;
+    // Read mode from stdin
+    if (!(cin >> mode)) {
+        cerr << "Error: Cannot read mode from stdin." << endl;
         return 1;
     }
 
-    // Generate round keys
-    KeyGenerator keygen(key);
-    keygen.generateRoundKeys();
+    // Read plaintext from stdin
+    if (!(cin >> plaintext)) {
+        cerr << "Error: Cannot read plaintext from stdin." << endl;
+        return 1;
+    }
 
-    vector<string> roundKeys = keygen.getRoundKeys();
+    // Read key from stdin
+    if (!(cin >> key)) {
+        cerr << "Error: Cannot read key from stdin." << endl;
+        return 1;
+    }
 
-    // Create DES object
-    DES des(roundKeys);
+    // Validate key is 64 bits
+    if (key.size() != 64) {
+        cerr << "Error: key must be 64 bits long." << endl;
+        return 1;
+    }
 
-    // Encrypt
-    string ciphertext = des.encrypt(plaintext);
+    // For mode 1: multi-block encryption with zero-padding
+    if (mode == 1) {
+        // Pad plaintext to 64-bit boundaries with zeros
+        size_t remainder = plaintext.size() % 64;
+        if (remainder != 0) {
+            plaintext.append(64 - remainder, '0');
+        }
 
-    cout << "Ciphertext: " << ciphertext << endl;
+        // Generate round keys
+        KeyGenerator keygen(key);
+        keygen.generateRoundKeys();
+
+        vector<string> roundKeys = keygen.getRoundKeys();
+
+        // Create DES object
+        DES des(roundKeys);
+
+        // Encrypt each 64-bit block
+        string full_ciphertext = "";
+        for (size_t i = 0; i < plaintext.size(); i += 64) {
+            string block = plaintext.substr(i, 64);
+            string ciphertext = des.encrypt(block);
+            full_ciphertext += ciphertext;
+        }
+
+        cout << full_ciphertext << endl;
+    } else {
+        // For other modes: single-block encryption
+        if (plaintext.size() != 64) {
+            cerr << "Error: for mode != 1, plaintext must be 64 bits long." << endl;
+            return 1;
+        }
+
+        // Generate round keys
+        KeyGenerator keygen(key);
+        keygen.generateRoundKeys();
+
+        vector<string> roundKeys = keygen.getRoundKeys();
+
+        // Create DES object
+        DES des(roundKeys);
+
+        // Encrypt
+        string ciphertext = des.encrypt(plaintext);
+
+        cout << ciphertext << endl;
+    }
 
     return 0;
 }
