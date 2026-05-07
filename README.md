@@ -259,7 +259,7 @@ Trước khi nộp, cần có:
 - `tests/` với ít nhất 5 test
 - có negative test cho `tamper` và `wrong key`
 - `logs/` có ít nhất 1 file minh chứng thật
-- không còn dòng `TODO_STUDENT`
+- đã kiểm tra và xóa các placeholder chưa hoàn chỉnh
 
 ## 10. Lưu ý về CI
 
@@ -269,7 +269,7 @@ CI sẽ **không chỉ kiểm tra file có tồn tại** mà còn kiểm tra:
 - các mục bắt buộc trong report
 - sự hiện diện của negative tests
 - có minh chứng trong `logs/`
-- repo **không còn placeholder `TODO_STUDENT`**
+- repo **đã xóa các placeholder chưa hoàn chỉnh**
 
 Vì vậy repo starter này sẽ **chưa pass CI** cho tới khi sinh viên hoàn thiện nội dung.
 

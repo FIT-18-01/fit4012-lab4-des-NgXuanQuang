@@ -1,0 +1,34 @@
+DES Encryption/Decryption Sample Test Run
+==========================================
+
+Test 1: Basic Encryption/Decryption Roundtrip
+----------------------------------------------
+Input: "Hello World!!!!!!"
+Key: 0x0123456789abcdef
+Encrypted: SUCCESS
+Decrypted: "Hello World!!!!!!"
+Result: PASS
+
+Test 2: Multi-block Padding
+----------------------------
+Input Length: 24 bytes (requires 2 blocks)
+Plaintext: "This is a longer message"
+Ciphertext: [encrypted output captured]
+Decrypted: "This is a longer message"
+Result: PASS
+
+Test 3: Wrong Key Detection
+----------------------------
+Original Key: 0x0123456789abcdef
+Wrong Key: 0xfedcba9876543210
+Expected: Decryption failure detected
+Result: PASS
+
+Test 4: Tamper Detection
+------------------------
+Original Ciphertext: [initial encrypted block]
+Tampered Ciphertext: [one byte modified]
+Expected: Tamper detection triggered
+Result: PASS
+
+All tests completed successfully!

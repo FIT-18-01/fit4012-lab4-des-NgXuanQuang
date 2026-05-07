@@ -280,26 +280,47 @@ class DES {
     
 // Main function
 int main() {
-    // Example plaintext (64 bits)
-    string plaintext = "0001001000110100010101100111100010011010101111001101111011110001";
-    
-    // Example key (64 bits)
-    string key = "0001001100110100010101110111100110011011101111001101111111110001";
-    
+    const string default_plaintext = "0001001000110100010101100111100010011010101111001101111011110001";
+    const string default_key = "0001001100110100010101110111100110011011101111001101111111110001";
+
+    string plaintext;
+    string key;
+
+    cout << "Enter 64-bit plaintext (binary string, leave empty to use default): ";
+    if (!getline(cin, plaintext)) {
+        return 0;
+    }
+    if (plaintext.empty()) {
+        plaintext = default_plaintext;
+    }
+
+    cout << "Enter 64-bit key (binary string, leave empty to use default): ";
+    if (!getline(cin, key)) {
+        return 0;
+    }
+    if (key.empty()) {
+        key = default_key;
+    }
+
+    if (plaintext.size() != 64 || key.size() != 64) {
+        cerr << "Error: plaintext and key must each be 64 bits long." << endl;
+        return 1;
+    }
+
     // Generate round keys
     KeyGenerator keygen(key);
-    keygen.generateRoundKeys(); 
-    
+    keygen.generateRoundKeys();
+
     vector<string> roundKeys = keygen.getRoundKeys();
-    
+
     // Create DES object
     DES des(roundKeys);
-    
+
     // Encrypt
     string ciphertext = des.encrypt(plaintext);
-    
+
     cout << "Ciphertext: " << ciphertext << endl;
-    
+
     return 0;
 }
 
