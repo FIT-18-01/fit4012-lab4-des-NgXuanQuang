@@ -273,8 +273,61 @@ class DES {
     
             return ciphertext;
         }
+
+        string decrypt(const string& input) {
+            // Apply initial permutation
+            string perm = initial_permutation(input);
+
+            // Split into left and right parts
+            string left = perm.substr(0, 32);
+            string right = perm.substr(32, 32);
+
+            // 16 Feistel rounds (using round keys in reverse order)
+            for (int i = 15; i >= 0; i--) {
+                // Expand right half to 48 bits
+                string right_expanded = "";
+                for (int j = 0; j < 48; j++) {
+                    right_expanded += right[expansion_table[j] - 1];
+                }
+
+                // XOR with round key (in reverse order)
+                string xored = Xor(round_keys[i], right_expanded);
+
+                // S-box substitution
+                string res = "";
+                for (int j = 0; j < 8; j++) {
+                    string row1 = xored.substr(j * 6, 1) + xored.substr(j * 6 + 5, 1);
+                    int row = convert_binary_to_decimal(row1);
+
+                    string col1 = xored.substr(j * 6 + 1, 4);
+                    int col = convert_binary_to_decimal(col1);
+
+                    int val = substition_boxes[j][row][col];
+                    res += convert_decimal_to_binary(val);
+                }
+
+                // Permutation after S-box
+                string perm2 = "";
+                for (int j = 0; j < 32; j++) {
+                    perm2 += res[permutation_tab[j] - 1];
+                }
+
+                // XOR permuted result with left, then swap
+                string new_right = Xor(perm2, left);
+                left = right;
+                right = new_right;
+            }
+
+            // Swap final halves
+            string combined_text = right + left;
+
+            // Apply inverse initial permutation
+            string plaintext = inverse_initial_permutation(combined_text);
+
+            return plaintext;
+        }
 };
-    
+
 // Main function
 int main() {
     int mode;
@@ -287,26 +340,26 @@ int main() {
         return 1;
     }
 
-    // Read plaintext from stdin
+    // Read plaintext/ciphertext from stdin
     if (!(cin >> plaintext)) {
         cerr << "Error: Cannot read plaintext from stdin." << endl;
         return 1;
     }
 
-    // Read key from stdin
+    // Read first key from stdin
     if (!(cin >> key)) {
         cerr << "Error: Cannot read key from stdin." << endl;
         return 1;
     }
 
-    // Validate key is 64 bits
-    if (key.size() != 64) {
-        cerr << "Error: key must be 64 bits long." << endl;
-        return 1;
-    }
-
-    // For mode 1: multi-block encryption with zero-padding
+    // For mode 1: multi-block DES encryption with zero-padding
     if (mode == 1) {
+        // Validate key is 64 bits
+        if (key.size() != 64) {
+            cerr << "Error: key must be 64 bits long." << endl;
+            return 1;
+        }
+
         // Pad plaintext to 64-bit boundaries with zeros
         size_t remainder = plaintext.size() % 64;
         if (remainder != 0) {
@@ -331,26 +384,110 @@ int main() {
         }
 
         cout << full_ciphertext << endl;
-    } else {
-        // For other modes: single-block encryption
+    }
+    // For mode 3: TripleDES encrypt (EDE)
+    else if (mode == 3) {
+        // Validate inputs
         if (plaintext.size() != 64) {
-            cerr << "Error: for mode != 1, plaintext must be 64 bits long." << endl;
+            cerr << "Error: plaintext must be 64 bits for mode 3." << endl;
+            return 1;
+        }
+        if (key.size() != 64) {
+            cerr << "Error: first key must be 64 bits." << endl;
             return 1;
         }
 
-        // Generate round keys
-        KeyGenerator keygen(key);
-        keygen.generateRoundKeys();
+        // Read second and third keys
+        string key2, key3;
+        if (!(cin >> key2)) {
+            cerr << "Error: Cannot read second key from stdin." << endl;
+            return 1;
+        }
+        if (!(cin >> key3)) {
+            cerr << "Error: Cannot read third key from stdin." << endl;
+            return 1;
+        }
 
-        vector<string> roundKeys = keygen.getRoundKeys();
+        if (key2.size() != 64 || key3.size() != 64) {
+            cerr << "Error: all keys must be 64 bits." << endl;
+            return 1;
+        }
 
-        // Create DES object
-        DES des(roundKeys);
+        // Generate round keys for all three keys
+        KeyGenerator keygen1(key);
+        keygen1.generateRoundKeys();
+        
+        KeyGenerator keygen2(key2);
+        keygen2.generateRoundKeys();
+        
+        KeyGenerator keygen3(key3);
+        keygen3.generateRoundKeys();
 
-        // Encrypt
-        string ciphertext = des.encrypt(plaintext);
+        // Create DES objects
+        DES des1(keygen1.getRoundKeys());
+        DES des2(keygen2.getRoundKeys());
+        DES des3(keygen3.getRoundKeys());
 
-        cout << ciphertext << endl;
+        // TripleDES EDE: Encrypt with K1, Decrypt with K2, Encrypt with K3
+        string temp = des1.encrypt(plaintext);
+        temp = des2.decrypt(temp);
+        string result = des3.encrypt(temp);
+
+        cout << result << endl;
+    }
+    // For mode 4: TripleDES decrypt (reverse EDE)
+    else if (mode == 4) {
+        // Validate inputs
+        if (plaintext.size() != 64) {
+            cerr << "Error: ciphertext must be 64 bits for mode 4." << endl;
+            return 1;
+        }
+        if (key.size() != 64) {
+            cerr << "Error: first key must be 64 bits." << endl;
+            return 1;
+        }
+
+        // Read second and third keys
+        string key2, key3;
+        if (!(cin >> key2)) {
+            cerr << "Error: Cannot read second key from stdin." << endl;
+            return 1;
+        }
+        if (!(cin >> key3)) {
+            cerr << "Error: Cannot read third key from stdin." << endl;
+            return 1;
+        }
+
+        if (key2.size() != 64 || key3.size() != 64) {
+            cerr << "Error: all keys must be 64 bits." << endl;
+            return 1;
+        }
+
+        // Generate round keys for all three keys
+        KeyGenerator keygen1(key);
+        keygen1.generateRoundKeys();
+        
+        KeyGenerator keygen2(key2);
+        keygen2.generateRoundKeys();
+        
+        KeyGenerator keygen3(key3);
+        keygen3.generateRoundKeys();
+
+        // Create DES objects
+        DES des1(keygen1.getRoundKeys());
+        DES des2(keygen2.getRoundKeys());
+        DES des3(keygen3.getRoundKeys());
+
+        // TripleDES Decrypt (reverse EDE): Decrypt with K3, Encrypt with K2, Decrypt with K1
+        string temp = des3.decrypt(plaintext);
+        temp = des2.encrypt(temp);
+        string result = des1.decrypt(temp);
+
+        cout << result << endl;
+    }
+    else {
+        cerr << "Error: unsupported mode " << mode << endl;
+        return 1;
     }
 
     return 0;
